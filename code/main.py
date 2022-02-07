@@ -109,6 +109,7 @@ class Game:
             self.extra_spawn_time = randint(400, 800)
 
     def collision_checks(self):
+        global game_active
         # player lasers
         if self.player.sprite.lasers:
             for laser in self.player.sprite.lasers:
@@ -138,16 +139,16 @@ class Game:
                     laser.kill()
                     self.lives -= 1
                     if self.lives <= 0:
-                        pygame.quit()
-                        sys.exit()
+
+                        game_active = False
         # alien
         if self.aliens:
             for alien in self.aliens:
                 pygame.sprite.spritecollide(alien, self.blocks, True)
 
                 if pygame.sprite.spritecollide(alien, self.player, False):
-                    pygame.quit()
-                    sys.exit()
+
+                    game_active = False
 
     def display_lives(self):
         for live in range(self.lives - 1):
@@ -159,25 +160,52 @@ class Game:
         score_rect = score_surf.get_rect(topleft=(10, -10))
         screen.blit(score_surf, score_rect)
 
+    def victory_message(self):
+        if not self.aliens.sprites():
+            victory_surf = self.font.render("You won", False, "white")
+            victory_rect = victory_surf.get_rect(
+                center=(screen_width / 2, screen_height / 2)
+            )
+            screen.blit(victory_surf, victory_rect)
+
     def run(self):
-        self.player.update()
-        self.aliens.update(self.alien_direction)
-        self.alien_lasers.update()
-        self.alien_position_checker()
 
-        self.extra_alien_timer()
-        self.extra.update()
-        self.collision_checks()
+        if game_active:
+            self.player.update()
+            self.aliens.update(self.alien_direction)
+            self.alien_lasers.update()
+            self.alien_position_checker()
 
-        self.player.sprite.lasers.draw(screen)
-        self.player.draw(screen)
+            self.extra_alien_timer()
+            self.extra.update()
+            self.collision_checks()
 
-        self.blocks.draw(screen)
-        self.aliens.draw(screen)
-        self.alien_lasers.draw(screen)
-        self.extra.draw(screen)
-        self.display_lives()
-        self.display_score()
+            self.player.sprite.lasers.draw(screen)
+            self.player.draw(screen)
+            self.alien_lasers.draw(screen)
+            self.blocks.draw(screen)
+            self.aliens.draw(screen)
+            self.extra.draw(screen)
+            self.display_lives()
+            self.display_score()
+            self.victory_message()
+        else:
+            game_message = self.font.render("Press SPACE to run", False, "white")
+            game_message_rect = game_message.get_rect(
+                center=(screen_width / 2, screen_height / 2 + 200)
+            )
+            score_message = self.font.render(
+                f"Your Score: {self.score}", False, "white"
+            )
+            score_message_rect = score_message.get_rect(
+                center=(screen_width / 2, screen_height / 2)
+            )
+
+            if self.score == 0:
+                screen.blit(game_message, game_message_rect)
+            else:
+                screen.blit(score_message, score_message_rect)
+                screen.blit(game_message, game_message_rect)
 
 
 class CRT:
@@ -206,6 +234,7 @@ if __name__ == "__main__":
     clock = pygame.time.Clock()
     game = Game()
     crt = CRT()
+    game_active = False
 
     ALIENLASER = pygame.USEREVENT + 1
     pygame.time.set_timer(ALIENLASER, 800)
@@ -215,8 +244,12 @@ if __name__ == "__main__":
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            if event.type == ALIENLASER:
-                game.alien_shoot()
+            if game_active:
+                if event.type == ALIENLASER:
+                    game.alien_shoot()
+            else:
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                    game_active = True
 
         screen.fill((30, 30, 30))
         game.run()
