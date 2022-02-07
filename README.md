@@ -2,4 +2,4 @@
 
 1. Install python 3.x
 2. Install pygame: `pip install pygame`
-3. run the game: `python app.py`
+3. run the game: `python code/main.py`
